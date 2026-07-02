@@ -600,44 +600,64 @@ elif st.session_state.page == "History":
 # PAGE: ABOUT
 # ==============================================================
 elif st.session_state.page == "About":
+
+    st.markdown("<div style='padding: 30px 40px;'>", unsafe_allow_html=True)
+
     st.markdown("""
-    <div class="about-card">
-        <div class="analyze-title" style="font-size:16px; margin-bottom:20px;">
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:16px; padding:40px; max-width:800px; margin:0 auto;'>
+        <div style='color:#ccff00; font-size:16px; font-weight:700; letter-spacing:2px; margin-bottom:24px;'>
             ℹ️ &nbsp; ABOUT THIS PROJECT
         </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-        <div class="about-disclaimer">
-            The Fake News Detector is intended for <strong style="color:#ccff00;">educational and research purposes</strong>.
-            Its predictions are based on patterns learned from training data and should not be considered
-            absolute proof that an article is true or false. Users are encouraged to consult trusted news
-            organizations and multiple sources before drawing conclusions.
-        </div>
+    # Disclaimer box
+    st.info("""
+📌 **Disclaimer**
 
-        <div class="section-title">📋 &nbsp; PROJECT INFORMATION</div>
+The Fake News Detector is intended for **educational and research purposes**.
+Its predictions are based on patterns learned from training data and should not be considered absolute proof that an article is true or false.
+Users are encouraged to consult trusted news organizations and multiple sources before drawing conclusions.
+    """)
 
-        <div class="about-info-row">
-            <span class="key">🏛️ &nbsp; Institution</span>
-            <span class="val">Plateau State University, Bokkos (PLASU)</span>
-        </div>
-        <div class="about-info-row">
-            <span class="key">💻 &nbsp; Department</span>
-            <span class="val">Computer Science</span>
-        </div>
-        <div class="about-info-row">
-            <span class="key">🎓 &nbsp; Project Type</span>
-            <span class="val">Final Year Project</span>
-        </div>
-        <div class="about-info-row">
-            <span class="key">📅 &nbsp; Academic Session</span>
-            <span class="val">2025/2026</span>
-        </div>
+    st.markdown("---")
 
-        <div class="section-title" style="margin-top:28px;">👨‍💻 &nbsp; DEVELOPED BY</div>
-        <div class="about-developer">
-            ⚡ Machief Plasu_CS_2026
+    st.markdown("### 📋 Project Information")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.markdown("""
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; line-height:2.4; font-size:14px;'>
+            <div><span style='color:#888;'>🏛️ &nbsp; Institution</span></div>
+            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Plateau State University, Bokkos (PLASU)</div>
+            <div><span style='color:#888;'>💻 &nbsp; Department</span></div>
+            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Computer Science</div>
         </div>
+        """, unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown("""
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; line-height:2.4; font-size:14px;'>
+            <div><span style='color:#888;'>🎓 &nbsp; Project Type</span></div>
+            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Final Year Project</div>
+            <div><span style='color:#888;'>📅 &nbsp; Academic Session</span></div>
+            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>2025/2026</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 👨‍💻 Developed By")
+
+    st.markdown("""
+    <div style='background-color:#1a1a1a; border:1px solid #ccff0055; border-radius:10px;
+                padding:24px; text-align:center; color:#ccff00;
+                font-size:20px; font-weight:900; letter-spacing:2px;'>
+        ⚡ Machief Plasu_CS_2026
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ---- FOOTER ----
 st.markdown("""
