@@ -1,7 +1,8 @@
 import streamlit as st
 import joblib
+from newspaper import Article
 
-st.set_page_config(page_title="FakeShield", layout="centered")
+st.set_page_config(page_title="Fake News Detector - PLASU", layout="centered")
 
 # ---- Custom CSS ----
 st.markdown("""
@@ -67,8 +68,26 @@ st.markdown("""
         color: #888888;
         font-size: 14px;
         font-family: monospace;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
         letter-spacing: 1px;
+    }
+
+    /* Project info box */
+    .project-info {
+        background-color: #111111;
+        border: 1px solid #2a2a2a;
+        border-left: 3px solid #ccff00;
+        border-radius: 8px;
+        padding: 14px 20px;
+        margin-bottom: 24px;
+        font-family: monospace;
+        font-size: 12px;
+        color: #aaaaaa;
+        line-height: 1.8;
+    }
+    .project-info span {
+        color: #ccff00;
+        font-weight: bold;
     }
 
     /* Card container */
@@ -155,8 +174,10 @@ st.markdown("""
         font-size: 11px;
         margin-top: 40px;
         letter-spacing: 1px;
+        line-height: 2;
     }
     .footer span { color: #666666; margin: 0 8px; }
+    .footer .highlight { color: #ccff00; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,6 +210,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ---- Project Info Box ----
+st.markdown("""
+<div class="project-info">
+    🎓 <span>Institution:</span> Plateau State University, Bokkos (PLASU)<br>
+    📚 <span>Department:</span> Computer Science<br>
+    🧑‍💻 <span>Project Type:</span> Final Year Graduating Project — CS 2026<br>
+    🤖 <span>Powered by:</span> Machief Plasu_CS_2026
+</div>
+""", unsafe_allow_html=True)
+
 # ---- Input Card ----
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.markdown('<div class="input-label">NEWS ARTICLE TEXT</div>', unsafe_allow_html=True)
@@ -200,9 +231,11 @@ news_input = st.text_area(
     label_visibility="collapsed"
 )
 
+st.markdown('<div class="input-label" style="margin-top:10px;">OR PASTE A URL</div>', unsafe_allow_html=True)
+
 source_url = st.text_input(
     label="Source URL",
-    placeholder="Source URL (optional)",
+    placeholder="e.g. https://www.bbc.com/news/article...",
     label_visibility="collapsed"
 )
 
@@ -211,6 +244,19 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # ---- Result ----
 if analyze:
+
+    # If URL is provided fetch article text from it
+    if source_url.strip():
+        try:
+            article = Article(source_url.strip())
+            article.download()
+            article.parse()
+            news_input = article.text
+            st.info(f"📰 Article extracted from URL — {len(news_input.split())} words found.")
+        except Exception as e:
+            st.error(f"❌ Could not extract article from URL: {e}")
+            st.stop()
+
     if news_input.strip():
         transformed = vectorizer.transform([news_input])
         prediction = model.predict(transformed)[0]
@@ -229,11 +275,12 @@ if analyze:
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.warning("⚠️ Please paste a news article to analyze.")
+        st.warning("⚠️ Please paste a news article or a valid URL to analyze.")
 
 # ---- Footer ----
 st.markdown("""
 <div class="footer">
-    © 2026 FakeShield <span>·</span> Helping You Verify News
+    © 2026 FakeShield <span>·</span> Helping You Verify News<br>
+    <span class="highlight">Powered by Machief Plasu_CS_2026</span> <span>·</span> Plateau State University, Bokkos
 </div>
 """, unsafe_allow_html=True)
