@@ -11,6 +11,27 @@ if "page" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+# ---- Load Models ----
+@st.cache_resource
+def load_models():
+    vectorizer = joblib.load("vectorizer.jb")
+    models = {}
+    model_files = {
+        "Logistic Regression": "lr_model.jb",
+        "Random Forest": "rf_model.jb",
+        "Naive Bayes": "nb_model.jb",
+        "Decision Tree": "dt_model.jb",
+    }
+    for name, filename in model_files.items():
+        try:
+            models[name] = joblib.load(filename)
+        except:
+            pass
+    return vectorizer, models
+
+vectorizer, models = load_models()
+model_loaded = len(models) > 0
+
 # ---- Custom CSS ----
 st.markdown("""
 <style>
@@ -21,20 +42,15 @@ st.markdown("""
     .stApp {
         background-color: #0a0a0a;
         color: #ffffff;
-        background-image: 
+        background-image:
             linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
         background-size: 40px 40px;
     }
-
-    .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-
+    .block-container { padding: 0 !important; max-width: 100% !important; }
     #MainMenu, footer, header { visibility: hidden; }
 
-    /* ---- NAVBAR ---- */
+    /* NAVBAR */
     .navbar {
         display: flex;
         justify-content: space-between;
@@ -66,9 +82,8 @@ st.markdown("""
         color: #ccff00;
         letter-spacing: 1px;
     }
-    .dot-green { color: #00ff88; }
 
-    /* ---- HERO ---- */
+    /* HERO */
     .hero-title {
         font-size: 64px;
         font-weight: 900;
@@ -84,7 +99,7 @@ st.markdown("""
         margin-bottom: 30px;
     }
 
-    /* ---- PROJECT BOX ---- */
+    /* PROJECT BOX */
     .project-box {
         background-color: #111111;
         border: 1px solid #2a2a2a;
@@ -105,7 +120,7 @@ st.markdown("""
         min-width: 110px;
     }
 
-    /* ---- ANALYZE CARD ---- */
+    /* ANALYZE CARD */
     .analyze-card {
         background-color: #111111;
         border: 1px solid #2a2a2a;
@@ -131,10 +146,13 @@ st.markdown("""
         margin: 12px 0;
         letter-spacing: 2px;
     }
-    .url-label {
-        color: #aaaaaa;
-        font-size: 13px;
-        margin-bottom: 8px;
+    .url-label { color: #aaaaaa; font-size: 13px; margin-bottom: 8px; }
+    .model-label {
+        color: #ccff00;
+        font-size: 11px;
+        font-family: monospace;
+        letter-spacing: 2px;
+        margin: 14px 0 6px 0;
     }
     .security-note {
         text-align: center;
@@ -144,7 +162,7 @@ st.markdown("""
         font-family: monospace;
     }
 
-    /* ---- INPUTS ---- */
+    /* INPUTS */
     .stTextArea textarea {
         background-color: #1a1a1a !important;
         border: 1px solid #2a2a2a !important;
@@ -163,8 +181,14 @@ st.markdown("""
         border-radius: 10px !important;
         font-size: 14px !important;
     }
+    .stSelectbox > div > div {
+        background-color: #1a1a1a !important;
+        border: 1px solid #2a2a2a !important;
+        color: #ffffff !important;
+        border-radius: 10px !important;
+    }
 
-    /* ---- BUTTONS ---- */
+    /* BUTTONS */
     .stButton button {
         background-color: #ccff00 !important;
         color: #000000 !important;
@@ -177,11 +201,55 @@ st.markdown("""
         width: 100% !important;
         cursor: pointer !important;
     }
-    .stButton button:hover {
-        background-color: #aadd00 !important;
+    .stButton button:hover { background-color: #aadd00 !important; }
+
+    /* RESULT BOXES */
+    .result-real {
+        background-color: #0a2a0a;
+        border: 1px solid #00ff88;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        color: #00ff88;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: monospace;
+        margin-top: 16px;
+        line-height: 2;
+    }
+    .result-fake {
+        background-color: #2a0a0a;
+        border: 1px solid #ff4444;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        color: #ff4444;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: monospace;
+        margin-top: 16px;
+        line-height: 2;
     }
 
-    /* ---- HOW IT WORKS ---- */
+    /* ENSEMBLE VOTES */
+    .vote-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 10px 16px;
+        margin-bottom: 8px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+    .vote-name { color: #aaaaaa; }
+    .vote-real { color: #00ff88; font-weight: 700; }
+    .vote-fake { color: #ff4444; font-weight: 700; }
+    .vote-conf { color: #ccff00; }
+
+    /* HOW IT WORKS */
     .how-it-works {
         background-color: #111111;
         border: 1px solid #2a2a2a;
@@ -195,11 +263,7 @@ st.markdown("""
         letter-spacing: 2px;
         margin-bottom: 20px;
     }
-    .steps-row {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-    }
+    .steps-row { display: flex; gap: 12px; align-items: flex-start; }
     .step-card {
         flex: 1;
         background-color: #1a1a1a;
@@ -213,33 +277,7 @@ st.markdown("""
     .step-desc { font-size: 11px; color: #666666; line-height: 1.5; }
     .step-arrow { color: #ccff00; font-size: 16px; padding-top: 40px; }
 
-    /* ---- RESULT BOXES ---- */
-    .result-real {
-        background-color: #0a2a0a;
-        border: 1px solid #00ff88;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        color: #00ff88;
-        font-size: 20px;
-        font-weight: bold;
-        font-family: monospace;
-        margin-top: 16px;
-    }
-    .result-fake {
-        background-color: #2a0a0a;
-        border: 1px solid #ff4444;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        color: #ff4444;
-        font-size: 20px;
-        font-weight: bold;
-        font-family: monospace;
-        margin-top: 16px;
-    }
-
-    /* ---- HISTORY CARD ---- */
+    /* HISTORY */
     .history-card {
         background-color: #111111;
         border: 1px solid #2a2a2a;
@@ -273,11 +311,7 @@ st.markdown("""
         font-weight: 700;
         font-family: monospace;
     }
-    .history-time {
-        color: #444444;
-        font-size: 11px;
-        font-family: monospace;
-    }
+    .history-time { color: #444444; font-size: 11px; font-family: monospace; }
     .history-text {
         color: #888888;
         font-size: 13px;
@@ -286,11 +320,7 @@ st.markdown("""
         padding-left: 12px;
         margin-bottom: 8px;
     }
-    .history-confidence {
-        color: #ccff00;
-        font-size: 11px;
-        font-family: monospace;
-    }
+    .history-confidence { color: #ccff00; font-size: 11px; font-family: monospace; }
     .empty-history {
         text-align: center;
         color: #444444;
@@ -301,49 +331,7 @@ st.markdown("""
         border-radius: 12px;
     }
 
-    /* ---- ABOUT PAGE ---- */
-    .about-card {
-        background-color: #111111;
-        border: 1px solid #2a2a2a;
-        border-radius: 16px;
-        padding: 40px;
-        max-width: 800px;
-        margin: 40px auto;
-    }
-    .about-disclaimer {
-        background-color: #1a1a0a;
-        border: 1px solid #ccff0044;
-        border-left: 3px solid #ccff00;
-        border-radius: 8px;
-        padding: 16px 20px;
-        color: #aaaaaa;
-        font-size: 14px;
-        line-height: 1.8;
-        margin-bottom: 30px;
-    }
-    .about-info-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px solid #1a1a1a;
-        font-size: 14px;
-    }
-    .about-info-row .key { color: #888888; }
-    .about-info-row .val { color: #ffffff; font-weight: 600; }
-    .about-developer {
-        background-color: #1a1a1a;
-        border: 1px solid #2a2a2a;
-        border-radius: 10px;
-        padding: 16px 20px;
-        margin-top: 20px;
-        text-align: center;
-        color: #ccff00;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-
-    /* ---- FOOTER ---- */
+    /* FOOTER */
     .footer {
         display: flex;
         justify-content: space-between;
@@ -361,14 +349,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---- Load Model ----
-try:
-    vectorizer = joblib.load("vectorizer.jb")
-    model = joblib.load("lr_model.jb")
-    model_loaded = True
-except Exception as e:
-    model_loaded = False
-
 # ---- NAVBAR ----
 st.markdown(f"""
 <div class="navbar">
@@ -376,11 +356,8 @@ st.markdown(f"""
         🛡️ &nbsp;
         <span class="white">FAKE NEWS</span>&nbsp;<span class="yellow">DETECTOR</span>
     </div>
-    <div style="display:flex; align-items:center; gap:16px;">
-        <div class="model-status">
-            <span class="dot-green">●</span>
-            MODEL {"ONLINE" if model_loaded else "OFFLINE"}
-        </div>
+    <div class="model-status">
+        ● MODEL {"ONLINE" if model_loaded else "OFFLINE"} &nbsp;·&nbsp; {len(models)} MODEL(S) LOADED
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -397,7 +374,38 @@ with nav3:
     if st.button("ℹ️ About"):
         st.session_state.page = "About"
 
-st.markdown("<hr style='border-color:#1a1a1a; margin: 0 0 10px 0'>", unsafe_allow_html=True)
+st.markdown("<hr style='border-color:#1a1a1a; margin:0 0 10px 0'>", unsafe_allow_html=True)
+
+# ---- HELPER: Run Prediction ----
+def run_prediction(news_text, selected_model_name):
+    transformed = vectorizer.transform([news_text])
+
+    if selected_model_name == "🗳️ Ensemble (All Models Vote)":
+        votes = []
+        confidences = []
+        vote_details = []
+
+        for name, mdl in models.items():
+            pred = mdl.predict(transformed)[0]
+            conf = mdl.predict_proba(transformed).max() * 100
+            votes.append(pred)
+            confidences.append(conf)
+            vote_details.append({
+                "name": name,
+                "pred": pred,
+                "conf": conf
+            })
+
+        final_pred = max(set(votes), key=votes.count)
+        avg_conf = sum(confidences) / len(confidences)
+        return final_pred, avg_conf, vote_details
+
+    else:
+        mdl = models[selected_model_name]
+        pred = mdl.predict(transformed)[0]
+        conf = mdl.predict_proba(transformed).max() * 100
+        return pred, conf, None
+
 
 # ==============================================================
 # PAGE: DASHBOARD
@@ -451,7 +459,7 @@ if st.session_state.page == "Dashboard":
         news_input = st.text_area(
             label="News Article",
             placeholder="Paste the full news article or headline here...",
-            height=180,
+            height=160,
             label_visibility="collapsed"
         )
 
@@ -461,6 +469,15 @@ if st.session_state.page == "Dashboard":
         source_url = st.text_input(
             label="Source URL",
             placeholder="https://www.example.com/article...",
+            label_visibility="collapsed"
+        )
+
+        st.markdown('<div class="model-label">SELECT MODEL</div>', unsafe_allow_html=True)
+
+        model_options = list(models.keys()) + ["🗳️ Ensemble (All Models Vote)"]
+        selected_model_name = st.selectbox(
+            label="Select Model",
+            options=model_options,
             label_visibility="collapsed"
         )
 
@@ -489,9 +506,9 @@ if st.session_state.page == "Dashboard":
                 if not model_loaded:
                     st.error("❌ Model not loaded. Check your model files.")
                 else:
-                    transformed = vectorizer.transform([news_input])
-                    prediction = model.predict(transformed)[0]
-                    confidence = model.predict_proba(transformed).max() * 100
+                    prediction, confidence, vote_details = run_prediction(
+                        news_input, selected_model_name
+                    )
                     label = "REAL" if prediction == 1 else "FAKE"
                     timestamp = datetime.now().strftime("%b %d, %Y · %I:%M %p")
                     preview = news_input[:200] + "..." if len(news_input) > 200 else news_input
@@ -502,21 +519,49 @@ if st.session_state.page == "Dashboard":
                         "confidence": confidence,
                         "preview": preview,
                         "time": timestamp,
-                        "source": source_url.strip() if source_url.strip() else "Manual Input"
+                        "source": source_url.strip() if source_url.strip() else "Manual Input",
+                        "model": selected_model_name
                     })
 
+                    # Show result
                     if prediction == 1:
                         st.markdown(f"""
                         <div class="result-real">
-                            ✅ REAL NEWS &nbsp;·&nbsp; Confidence: {confidence:.1f}%
+                            ✅ REAL NEWS<br>
+                            <span style="font-size:13px; color:#aaaaaa;">
+                                Model: {selected_model_name} &nbsp;·&nbsp; Confidence: {confidence:.1f}%
+                            </span>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
                         st.markdown(f"""
                         <div class="result-fake">
-                            🚨 FAKE NEWS &nbsp;·&nbsp; Confidence: {confidence:.1f}%
+                            🚨 FAKE NEWS<br>
+                            <span style="font-size:13px; color:#aaaaaa;">
+                                Model: {selected_model_name} &nbsp;·&nbsp; Confidence: {confidence:.1f}%
+                            </span>
                         </div>
                         """, unsafe_allow_html=True)
+
+                    # Show ensemble vote breakdown
+                    if vote_details:
+                        st.markdown("""
+                        <div style="margin-top:16px;">
+                            <div class="model-label">🗳️ INDIVIDUAL MODEL VOTES</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        for v in vote_details:
+                            vote_label = "✅ REAL" if v["pred"] == 1 else "🚨 FAKE"
+                            vote_class = "vote-real" if v["pred"] == 1 else "vote-fake"
+                            st.markdown(f"""
+                            <div class="vote-row">
+                                <span class="vote-name">🤖 {v["name"]}</span>
+                                <span class="{vote_class}">{vote_label}</span>
+                                <span class="vote-conf">⚡ {v["conf"]:.1f}%</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+
             else:
                 st.warning("⚠️ Please paste a news article or a valid URL.")
 
@@ -534,25 +579,26 @@ if st.session_state.page == "Dashboard":
             <div class="step-arrow">→</div>
             <div class="step-card">
                 <div class="step-icon">🤖</div>
-                <div class="step-number">2. AI Analysis</div>
-                <div class="step-desc">Our ML model analyzes content and patterns.</div>
+                <div class="step-number">2. Select Model</div>
+                <div class="step-desc">Choose a model or use Ensemble for best accuracy.</div>
             </div>
             <div class="step-arrow">→</div>
             <div class="step-card">
                 <div class="step-icon">🛡️</div>
-                <div class="step-number">3. Verify Sources</div>
-                <div class="step-desc">Cross-model analyzes trusted sources.</div>
+                <div class="step-number">3. AI Analysis</div>
+                <div class="step-desc">Model analyzes content and text patterns.</div>
             </div>
             <div class="step-arrow">→</div>
             <div class="step-card">
                 <div class="step-icon">📊</div>
                 <div class="step-number">4. Get Result</div>
-                <div class="step-desc">Receive credibility score and insights.</div>
+                <div class="step-desc">Receive credibility score and confidence level.</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ==============================================================
 # PAGE: HISTORY
@@ -573,13 +619,13 @@ elif st.session_state.page == "History":
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Clear history button
         if st.button("🗑️  Clear History"):
             st.session_state.history = []
             st.rerun()
 
         for item in st.session_state.history:
-            badge = f'<span class="history-badge-real">✅ REAL</span>' if item["label"] == "REAL" else f'<span class="history-badge-fake">🚨 FAKE</span>'
+            badge = '<span class="history-badge-real">✅ REAL</span>' if item["label"] == "REAL" \
+                else '<span class="history-badge-fake">🚨 FAKE</span>'
             st.markdown(f"""
             <div class="history-card">
                 <div class="history-header">
@@ -587,31 +633,27 @@ elif st.session_state.page == "History":
                     <span class="history-time">🕐 {item["time"]}</span>
                 </div>
                 <div class="history-text">{item["preview"]}</div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <span class="history-confidence">⚡ Confidence: {item["confidence"]:.1f}%</span>
-                    <span style="color:#444; font-size:11px; font-family:monospace;">📎 {item["source"]}</span>
+                    <span style="color:#ccff00; font-size:11px; font-family:monospace;">
+                        🤖 {item["model"]}
+                    </span>
+                    <span style="color:#444; font-size:11px; font-family:monospace;">
+                        📎 {item["source"]}
+                    </span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+
 # ==============================================================
 # PAGE: ABOUT
 # ==============================================================
 elif st.session_state.page == "About":
-
     st.markdown("<div style='padding: 30px 40px;'>", unsafe_allow_html=True)
 
-    st.markdown("""
-        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:16px; padding:40px; max-width:800px; margin:0 auto;'>
-        <div style='color:#ccff00; font-size:16px; font-weight:700; letter-spacing:2px; margin-bottom:24px;'>
-            ℹ️ &nbsp; ABOUT THIS PROJECT
-        </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Disclaimer box
     st.info("""
 📌 **Disclaimer**
 
@@ -621,28 +663,57 @@ Users are encouraged to consult trusted news organizations and multiple sources 
     """)
 
     st.markdown("---")
-
     st.markdown("### 📋 Project Information")
 
     col_a, col_b = st.columns(2)
 
     with col_a:
         st.markdown("""
-        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; line-height:2.4; font-size:14px;'>
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px;
+                    padding:20px; line-height:2.4; font-size:14px;'>
             <div><span style='color:#888;'>🏛️ &nbsp; Institution</span></div>
-            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Plateau State University, Bokkos (PLASU)</div>
+            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>
+                Plateau State University, Bokkos (PLASU)
+            </div>
             <div><span style='color:#888;'>💻 &nbsp; Department</span></div>
-            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Computer Science</div>
+            <div style='color:#fff; font-weight:600;'>Computer Science</div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_b:
         st.markdown("""
-        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px; padding:20px; line-height:2.4; font-size:14px;'>
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px;
+                    padding:20px; line-height:2.4; font-size:14px;'>
             <div><span style='color:#888;'>🎓 &nbsp; Project Type</span></div>
             <div style='color:#fff; font-weight:600; margin-bottom:10px;'>Final Year Project</div>
             <div><span style='color:#888;'>📅 &nbsp; Academic Session</span></div>
-            <div style='color:#fff; font-weight:600; margin-bottom:10px;'>2025/2026</div>
+            <div style='color:#fff; font-weight:600;'>2025/2026</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🤖 Models Available")
+
+    model_descriptions = {
+        "Logistic Regression": "Fast and reliable baseline model. Great for text classification tasks.",
+        "Random Forest": "Ensemble of decision trees. Handles complex patterns well.",
+        "Naive Bayes": "Probabilistic model optimized specifically for text data.",
+        "Decision Tree": "Interpretable model that makes decisions based on feature splits.",
+        "🗳️ Ensemble": "All models vote together — majority wins. Most accurate overall."
+    }
+
+    for name, desc in model_descriptions.items():
+        available = name in models or name == "🗳️ Ensemble"
+        status = "🟢 Available" if available else "🔴 Not Loaded"
+        st.markdown(f"""
+        <div style='background-color:#111111; border:1px solid #2a2a2a; border-radius:10px;
+                    padding:14px 20px; margin-bottom:10px; display:flex;
+                    justify-content:space-between; align-items:center;'>
+            <div>
+                <div style='color:#ccff00; font-weight:700; font-size:13px;'>{name}</div>
+                <div style='color:#888; font-size:12px; margin-top:4px;'>{desc}</div>
+            </div>
+            <div style='color:#aaa; font-size:11px; font-family:monospace;'>{status}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -658,6 +729,7 @@ Users are encouraged to consult trusted news organizations and multiple sources 
     """, unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ---- FOOTER ----
 st.markdown("""
